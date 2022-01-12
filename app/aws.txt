@@ -1,0 +1,124 @@
+12/29
+EC2インスタンスの公開鍵の設定
+ssh -i ./test_instance.pem ubuntu@13.231.93.134
+
+test_instance.pem のpemファイルは複数の権限ユーザーいるとエラーになる。
+ファイルの右クリック、プロパティ、セキュリティから削除して一人にする。
+管理者のみ残すと実行できないので、userのみにする
+
+ubuntuの所はインスタンスによって違う。ec2-userなどのこともある
+
+＠以下のIPはパブリック IPv4 アドレスをEC２から取得する（毎回変わる）
+
+
+1/2
+lambdaとs3用いてアップロード画像のサムネイルを作成する手順
+ライブラリのインストールが難しかった
+参考リンク
+https://predora005.hatenablog.com/entry/2021/05/29/190000
+https://predora005.hatenablog.com/entry/2021/05/29/190000
+
+IAMポリシーとロールの作成（ポリシーはJSONで作成）
+Lambda関数の作成　関数はその場で作成
+
+
+dockerでpackageまとめたzipファイルを作成
+イメージが設計図で、コンテナが実物となっている
+docker　でアマゾンリナックスのイメージをプル　docker pull amazonlinux
+amazonlinuxのイメージをもとに新たなイメージ作るDockerfile、docker-compose.yml作成
+
+
+サーバー上とローカルでDIR構成が異なる
+AWSはファイル名に日本語使えないので注意
+argparseはクラス化するので、それに合わせて入力変更する sys.argv使う。リストになるのでそこからクラスにする
+関数への入力にアンパックつかう
+入力が数字でなく文字列になってしまうことあるので、型指定する
+
+docker-composeはコンテナ起動時にオプションを沢山入力する必要無くす
+Webサーバー, DBサーバー, Cacheサーバーなどの定義を一つのdocker-compose.yml
+ファイルに記述しておくことによって、それを元に実行に必要なコンテナをまとめて
+起動・設定することができます。
+
+
+lambdaのレイヤーにライブラリのzipアップロードしておくことで、lambda関数ごとに毎回ライブラリアップロード不要になる。（使いまわし効く）
+https://qiita.com/t_okkan/items/394a15577bd1aad46ec3
+
+1/8
+https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/configuration-function-zip.html#configuration-function-update
+関数とライブラリを一緒にzipにするときはこちらの方法使う
+
+1/9 aws lambdaをコンテナからアップロードする
+
+⓵AWS　ECRを通じてアップするので、まずプライベートリポジトリを作成する
+(AWS CLIで行うためにIAMで権限を付与しておく)
+aws ecr create-repository --repository-name lambda-repo --region ap-northeast-1
+
+
+⓶DockerImageを作成する
+（プロジェクトルートディレクトリ）/
+├── Dockerfile
+└── app.py
+
+Dockerfile
+FROM public.ecr.aws/lambda/python:3.8
+COPY app.py ${LAMBDA_TASK_ROOT}
+CMD [ "app.handler" ]
+
+app.py
+import sys
+def handler(event, context):
+    return 'Hello from AWS Lambda using Python' + sys.version + '!'
+
+
+＊＊＊（docker compose使う場合は以下のファイルも√DIRに作成する。
+runをdocker-compose up -dに変更する）
+
+docker-compose.yml
+version: "3.9"
+
+services:
+  lambda:
+    build: .
+    ports:
+      - "9000:8080"
+
+
+
+docker build -t {イメージ名} .
+docker run --rm -p 9000:8080 {イメージ名}
+を実行する
+ポート番号は任意
+composeするときは、runをdocker-compose up -dに変更する
+
+
+⓷ローカルでの動作確認
+curl -d '{}' http://localhost:9000/2015-03-31/functions/function/invocations
+curl http://127.0.0.1:9000/2015-03-31/functions/function/invocations -s -d '{}'
+などでアクセスする。
+
+＊＊＊＊＊＊＊＊＊＊＊windowsのコマンドプロンプトでやると＊＊＊＊＊＊＊
+必ずGit Bashを開いて実行する
+
+⓸ECRにデプロイする
+１イメージのプッシュ先となる Amazon ECR レジストリに対して Docker クライアントを認証
+aws ecr get-login-password --region region | docker login --username AWS --password-stdin aws_account_id.dkr.ecr.region.amazonaws.com
+実際に使ったコマンドは
+aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 604807872491.dkr.ecr.ap-northeast-1.amazonaws.com
+604807872491はAWSのID
+
+２ローカルのイメージを確認する
+docker images
+
+３Amazon ECR レジストリ、リポジトリ、およびオプションのイメージタグ名を組み合わせたタグをイメージに付与
+docker tag ローカルイメージID 　アカウントID.dkr.ecr.リージョン.amazonaws.com/ECRリポジトリ名:タグ
+実際に使ったコマンドは
+docker tag b661ec968f52  604807872491.dkr.ecr.ap-northeast-1.amazonaws.com/lambda-repo:latest
+
+４docker push コマンドを使用してイメージをプッシュ
+docker push aws_account_id.dkr.ecr.region.amazonaws.com/my-repository:tag
+実際に使ったコマンドは
+docker push 604807872491.dkr.ecr.ap-northeast-1.amazonaws.com/lambda-repo:latest
+
+
+５lambda関数の作成
+コンテナから作成を選択して、手順に沿って作成する

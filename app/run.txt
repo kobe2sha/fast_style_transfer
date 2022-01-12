@@ -1,0 +1,37 @@
+利用
+元のDIR　argparse
+python app/neural_style/neural_style.py eval --content-image app/images/content-images/train/amber.jpg --model app/saved_models/mosaic.pth --output-image app/images/output-images/アンバー３.jpg --cuda 0
+
+修正後 argparse使わないコマンドライン引数
+python app/neural_style/neural_style.py app/images/content-images/train/amber.jpg app/saved_models/mosaic.pth app/images/output-images/アンバー6.jpg 0
+
+学習
+python app/neural_style/neural_style.py train --dataset app/images/content-images --style-image app/images/style-images/udnie.jpg --save-model-dir app/model --batch-size 2 --epochs 1 --cuda 0
+
+docker上でのlambda関数テスト　ファイル名に日本語使えないので注意
+curl -d '{"Records": ["images/content-images/train/amber.jpg", "saved_models/mosaic.pth", "images/output-images/test.jpg", 0]}' http://localhost:9000/2015-03-31/functions/function/invocations
+
+
+AWSのDOCKERにするにあたっての変更
+
+import utils
+from transformer_net import TransformerNet
+from vgg import Vgg16
+から
+from neural_style import utils
+from neural_style.transformer_net import TransformerNet
+from neural_style.vgg import Vgg16
+
+def main():
+から
+def handler(event, context):
+
+以下を消した
+if __name__ == "__main__":
+    main()
+
+サーバー上とローカルでDIR構成が異なる
+AWSはファイル名に日本語使えないので注意
+argparseはクラス化するので、それに合わせて入力変更する sys.argv使う。リストになるのでそこからクラスにする
+関数への入力にアンパックつかう
+入力が数字でなく文字列になってしまうことあるので、型指定する
