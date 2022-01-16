@@ -1,3 +1,5 @@
+#S3用に追加
+boto3
 argparse
 numpy
 torch

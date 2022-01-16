@@ -122,3 +122,10 @@ docker push 604807872491.dkr.ecr.ap-northeast-1.amazonaws.com/lambda-repo:latest
 
 ５lambda関数の作成
 コンテナから作成を選択して、手順に沿って作成する
+
+1/13
+ローカルのDOCKERでS３PUTの時に処理することに成功した
+docker cp 使うことでローカルとDOCKER間のファイルのやり取りできる
+docker cp 1f0742d36e84:/var/task/images/output-images/test2.jpg ./
+docker のDIRは /var/task/images/output-images/test2.jpgのような形になっている点に注意
+bash lsは-Rで再帰的にDIRの走査できる

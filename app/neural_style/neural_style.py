@@ -1,8 +1,11 @@
+import boto3 #追加
 import argparse
 import os
 import sys
 import time
 import re
+import uuid
+from urllib.parse import unquote_plus
 
 import numpy as np
 import torch
@@ -271,15 +274,59 @@ class args:
     # test()
 
 
-# 入力DICT、event['Records']の中身はリスト。それをクラスに変換する
-def handler(event, context):
-    print("レコード", event['Records'])
-    start = time.time()
-    args_list = event['Records']
-    print("スタート。引数は、", args_list)
 
-    args_class = args(*args_list)
-    stylize(args_class)
+# 入力DICT、event['Records']の中身はリスト。それをクラスに変換する
+# 通常のローカルテスト用
+# def handler(event, context):
+#     print("レコード", event['Params'])
+#     start = time.time()
+#     args_list = event['Params']
+#     print("スタート。引数は、", args_list)
+#
+#     args_class = args(*args_list)
+#     stylize(args_class)
+#
+#     t = time.time() - start
+#     print("終了。所要時間は、", t)
+
+# S3用
+def handler(event, context):
+    # print("レコード", event['Params'])
+    start = time.time()
+    # model, output_image, cuda = event['Params']
+    # print("スタート。引数は、", model, output_image, cuda)
+    print("スタート")
+    # アップロードされた画像をダウンロード
+    # bucket = event['Records']['s3']['bucket']['name']
+    # key = event['Records']['s3']['object']['key']
+    s3_client = boto3.client('s3')
+    #バケット名、key名を修正する
+    for record in event['Records']:
+        bucket = record['s3']['bucket']['name']
+        print("バケット名", bucket)
+        key = unquote_plus(record['s3']['object']['key'])
+        print("KEY名", key)
+        tmpkey = key.replace('/', '')
+        print("tmpkey名", tmpkey)
+        # コンテンツパスを修正
+        # download_path = "images/content-images/train/s3img.jpg"
+        download_path = '/tmp/{}{}'.format(uuid.uuid4(), tmpkey)
+        print("ダウンロードパスは", download_path)
+        # スタイルパスを修正
+        model = "saved_models/candy.pth"
+        output_image = '/tmp/resized-{}'.format(tmpkey)
+        print("アウトプットDIR", output_image)
+        s3_client.download_file(bucket, key, download_path)
+        print("ダウンロードできた")
+        args_class = args(content_image=download_path, model=model, output_image=output_image, cuda=0)
+        print("推論開始！")
+        stylize(args_class)
+        s3_client.upload_file(output_image, '{}-resized'.format(bucket), key)
+        print("アップロード")
+
+
+
+
 
     t = time.time() - start
     print("終了。所要時間は、", t)

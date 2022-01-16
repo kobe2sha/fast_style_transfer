@@ -35,3 +35,23 @@ AWSはファイル名に日本語使えないので注意
 argparseはクラス化するので、それに合わせて入力変更する sys.argv使う。リストになるのでそこからクラスにする
 関数への入力にアンパックつかう
 入力が数字でなく文字列になってしまうことあるので、型指定する
+
+1/12 S3用の修正
+
+{"Records":
+  ["images/content-images/train/amber.jpg", "saved_models/mosaic.pth", "images/output-images/test.jpg", 0]}
+
+以下の様に修正される
+  {"Params":
+      ["saved_models/candy.pth", "images/output-images/test2.jpg", 0],
+  "Records":
+  [{"s3": {"bucket": {"name": "mybucket-test994"}, "object": {"key": "downloada.png"}}}]
+  }
+
+S3の認証情報を付加してRUNするのは以下のコード
+docker run --rm -p 9000:8080 -e AWS_ACCESS_KEY_ID=AKIAYZUK3X7VWGS6VAC2 -e AWS_SECRET_ACCESS_KEY=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 -e AWS_DEFAULT_REGION=ap-northeast-1 neural_doc
+
+curlでは以下のように送る
+curl -d '{"Params": ["saved_models/candy.pth", "images/output-images/test2.jpg", 0], "Records": {"s3": {"bucket": {"name": "mybucket-test994"}, "object": {"key": "downloada.png"}}}}' http://localhost:9000/2015-03-31/functions/function/invocations
+S3使ってアップ、ダウンロードする場合はこちら
+curl -d '{"Records": [{"s3": {"bucket": {"name": "mybucket-test994"}, "object": {"key": "downloada.png"}}}]}' http://localhost:9000/2015-03-31/functions/function/invocations
