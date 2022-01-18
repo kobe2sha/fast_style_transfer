@@ -54,4 +54,4 @@ docker run --rm -p 9000:8080 -e AWS_ACCESS_KEY_ID=AKIAYZUK3X7VWGS6VAC2 -e AWS_SE
 curlでは以下のように送る
 curl -d '{"Params": ["saved_models/candy.pth", "images/output-images/test2.jpg", 0], "Records": {"s3": {"bucket": {"name": "mybucket-test994"}, "object": {"key": "downloada.png"}}}}' http://localhost:9000/2015-03-31/functions/function/invocations
 S3使ってアップ、ダウンロードする場合はこちら
-curl -d '{"Records": [{"s3": {"bucket": {"name": "mybucket-test994"}, "object": {"key": "downloada.png"}}}]}' http://localhost:9000/2015-03-31/functions/function/invocations
+curl -d '{"Records": [{"s3": {"bucket": {"name": "mybucket-test994"}, "object": {"key": "69ACA424-10D4-4876-9CDB-BD8D332A3DB6.jpg"}}}]}' http://localhost:9000/2015-03-31/functions/function/invocations

@@ -153,7 +153,8 @@ def stylize(args):
                 output = torch.onnx._export(style_model, content_image, args.export_onnx).cpu()
             else:
                 output = style_model(content_image).cpu()
-    utils.save_image(args.output_image, output[0])
+    img_base64 = utils.save_image(args.output_image, output[0])
+    return img_base64
 
 
 def stylize_onnx_caffe2(content_image, args):
@@ -320,9 +321,10 @@ def handler(event, context):
         print("ダウンロードできた")
         args_class = args(content_image=download_path, model=model, output_image=output_image, cuda=0)
         print("推論開始！")
-        stylize(args_class)
-        s3_client.upload_file(output_image, '{}-resized'.format(bucket), key)
-        print("アップロード")
+        img_base64 = stylize(args_class)
+        print("出力完了", img_base64)
+        # s3_client.upload_file(output_image, '{}-resized'.format(bucket), key)
+        # print("アップロード") resizedバケットにアップロードしないので不要
 
 
 
@@ -330,3 +332,13 @@ def handler(event, context):
 
     t = time.time() - start
     print("終了。所要時間は、", t)
+    return {
+    'statusCode': 200,
+    'headers': {
+  "Access-Control-Allow-Headers": 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+  "Access-Control-Allow-Origin": '*',
+  "Access-Control-Allow-Methods": "OPTIONS,POST"
+
+    },
+    'body': img_base64
+}
