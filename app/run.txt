@@ -3,11 +3,19 @@
 python app/neural_style/neural_style.py eval --content-image app/images/content-images/train/amber.jpg --model app/saved_models/mosaic.pth --output-image app/images/output-images/アンバー３.jpg --cuda 0
 修正後 argparse使わないコマンドライン引数
 python app/neural_style/neural_style.py app/images/content-images/train/amber.jpg app/saved_models/mosaic.pth app/images/output-images/アンバー6.jpg 0
+ブランチTRAINで動く推論コマンド
 python app/neural_style/neural_style.py app/images/content-images/train/wanwan.jpg
 
 
 学習
-python app/neural_style/neural_style.py train --dataset app/images/content-images --style-image app/images/style-images/udnie.jpg --save-model-dir app/model --batch-size 2 --epochs 1 --cuda 0
+python app/neural_style/neural_style.py train --dataset app/images/content-images
+--style-image app/images/style-images/udnie.jpg --save-model-dir app/model --batch-size 2 --epochs 1 --cuda 0
+argparsからargvに修正。引数は
+(epochs, batch_size, dataset, style_image, save_model_dir, checkpoint_model_dir, image_size, style_size,
+cuda, seed, content_weight, style_weight, lr, log_interval, checkpoint_interval)
+
+python app/neural_style/neural_style.py 1 1 app/images/content-images app/images/style-images/udnie.jpg app/model ^
+app/check_point 256 256 0 42 1e5 1e10 1e-3 500 2000
 
 docker上でのlambda関数テスト　ファイル名に日本語使えないので注意
 curl -d '{"Records": ["images/content-images/train/amber.jpg", "saved_models/mosaic.pth", "images/output-images/test.jpg", 0]}' http://localhost:9000/2015-03-31/functions/function/invocations
