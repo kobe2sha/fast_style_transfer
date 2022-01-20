@@ -3,6 +3,19 @@ from PIL import Image
 import base64
 from io import BytesIO
 
+# base64画像をPIL画像に変換する
+def base64_to_pil(img_str, size=None, scale=None):
+    if "base64," in img_str:
+        # DARA URI の場合、data:[<mediatype>][;base64], を除く
+        img_str = img_str.split(",")[1]
+    img_raw = base64.b64decode(img_str)
+    img = Image.open(BytesIO(img_raw)).convert('RGB')
+    if size is not None:
+        img = img.resize((size, size), Image.ANTIALIAS)
+    elif scale is not None:
+        img = img.resize((int(img.size[0] / scale), int(img.size[1] / scale)), Image.ANTIALIAS)
+    return img
+
 def load_image(filename, size=None, scale=None):
     img = Image.open(filename).convert('RGB')
     if size is not None:
@@ -10,6 +23,7 @@ def load_image(filename, size=None, scale=None):
     elif scale is not None:
         img = img.resize((int(img.size[0] / scale), int(img.size[1] / scale)), Image.ANTIALIAS)
     return img
+
 # 追加。PILイメージをbase64に変換してaxiosにレスポンスできるようにする
 def pil_to_base64(img, format="jpeg"):
     buffer = BytesIO()
@@ -21,8 +35,8 @@ def save_image(filename, data):
     img = data.clone().clamp(0, 255).numpy()
     img = img.transpose(1, 2, 0).astype("uint8")
     img = Image.fromarray(img)
-    # img.save(filename)修正
-    print("拡張子は", img.format)
+    # img.save(filename)
+    # print("拡張子は", img.format)
     img_base64 = pil_to_base64(img, format="jpeg")
     print("画像変換成功")
     return img_base64
